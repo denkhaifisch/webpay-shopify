@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Pago con Webpay</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 50px; text-align: center; }
+        input { margin: 10px; padding: 5px; }
+        button { padding: 10px 20px; background-color: #007bff; color: white; border: none; cursor: pointer; }
+        button:hover { background-color: #0056b3; }
+    </style>
+</head>
+<body>
+    <h1>Pago con Webpay para Shopify</h1>
+    <form action="/pay" method="post">
+        <label>ID del Pedido:</label><br>
+        <input type="text" name="order_id" placeholder="Ej. ORDER123" required><br>
+        <label>Monto (CLP):</label><br>
+        <input type="number" name="amount" placeholder="Ej. 10000" required><br>
+        <button type="submit">Pagar con Webpay</button>
+    </form>
+</body>
+</html>
