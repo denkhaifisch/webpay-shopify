@@ -46,7 +46,7 @@ def payment_result():
     try:
         response = tx.commit(token=token)
         if response['status'] == 'AUTHORIZED':
-            return f"Pago exitoso para el pedido {response['buy_order']}. Monto: {response['amount']}. Por favor, marca este pedido como pagado en Shopify."
+            return f"Pago exitoso para el pedido {response['buy_order']}. Monto: {response['amount']}."
         else:
             return f"Pago fallido para el pedido {response['buy_order']}. Estado: {response['status']}", 400
     except TransbankError as e:
