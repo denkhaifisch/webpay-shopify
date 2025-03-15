@@ -3,20 +3,77 @@
 <head>
     <title>Pago con Webpay</title>
     <style>
-        body { font-family: Arial, sans-serif; margin: 50px; text-align: center; }
-        input { margin: 10px; padding: 5px; }
-        button { padding: 10px 20px; background-color: #007bff; color: white; border: none; cursor: pointer; }
-        button:hover { background-color: #0056b3; }
+        body {
+            font-family: 'Arial', sans-serif;
+            background-color: #f4f4f9;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+        }
+        .container {
+            background-color: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            width: 100%;
+            max-width: 400px;
+            text-align: center;
+        }
+        h1 {
+            color: #333;
+            font-size: 24px;
+            margin-bottom: 20px;
+        }
+        label {
+            display: block;
+            color: #555;
+            font-weight: bold;
+            margin: 10px 0 5px;
+            text-align: left;
+        }
+        input[type="text"], input[type="number"] {
+            width: 100%;
+            padding: 10px;
+            margin-bottom: 15px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            box-sizing: border-box;
+            font-size: 16px;
+        }
+        button {
+            background-color: #007bff;
+            color: white;
+            padding: 12px 20px;
+            border: none;
+            border-radius: 5px;
+            font-size: 16px;
+            cursor: pointer;
+            width: 100%;
+        }
+        button:hover {
+            background-color: #0056b3;
+        }
+        .footer {
+            margin-top: 20px;
+            font-size: 12px;
+            color: #777;
+        }
     </style>
 </head>
 <body>
-    <h1>Pago con Webpay para Shopify</h1>
-    <form action="/pay" method="post">
-        <label>ID del Pedido:</label><br>
-        <input type="text" name="order_id" placeholder="Ej. ORDER123" required><br>
-        <label>Monto (CLP):</label><br>
-        <input type="number" name="amount" placeholder="Ej. 10000" required><br>
-        <button type="submit">Pagar con Webpay</button>
-    </form>
+    <div class="container">
+        <h1>Pago con Webpay</h1>
+        <form action="/pay" method="post">
+            <label>ID del Pedido</label>
+            <input type="text" name="order_id" placeholder="Ej. ORDER123" required>
+            <label>Monto (CLP)</label>
+            <input type="number" name="amount" placeholder="Ej. 10000" required>
+            <button type="submit">Pagar con Webpay</button>
+        </form>
+        <div class="footer">Ingresa los datos exactos de tu pedido</div>
+    </div>
 </body>
 </html>
