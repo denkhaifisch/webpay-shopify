@@ -34,7 +34,7 @@ def create_payment():
         response = tx.create(buy_order, session_id, amount, return_url)
         return redirect(f"{response['url']}?token_ws={response['token']}")
     except TransbankError as e:
-        return f"Error al iniciar el pago: {str(e)}", 400
+        return f"Error al iniciar el pago: {str(e)} - Detalles: {e.message}", 400
 
 # Ruta para manejar el resultado del pago
 @app.route('/result', methods=['GET', 'POST'])
