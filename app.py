@@ -9,8 +9,9 @@ app = Flask(__name__)
 # Configuración de Webpay Plus (entorno de producción)
 options = WebpayOptions(
     commerce_code='597036244178',
-    api_key='579B532A7440BB0C9079DED94D31EA1615BACEB56610332264630D42D0A36B1C',
-    integration_type='TEST'
+    api_key='d89040c88af98fe38e1c47d5a0fc705c',
+    integration_type='LIVE',
+    base_url='https://webpay3g.transbank.cl'  # Forzamos producción
 )
 tx = Transaction(options)
 
