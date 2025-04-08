@@ -9,7 +9,7 @@ app = Flask(__name__)
 options = WebpayOptions(
     commerce_code=os.getenv('WEBPAY_COMMERCE_CODE'),
     api_key=os.getenv('WEBPAY_API_KEY'),
-    integration_type=os.getenv('WEBPAY_INTEGRATION_TYPE', 'LIVE'),
+    integration_type=os.getenv('WEBPAY_INTEGRATION_TYPE'),
 )
 tx = Transaction(options)
 
