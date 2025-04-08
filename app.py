@@ -5,11 +5,10 @@ import os
 
 app = Flask(__name__)
 
-# Configuración de Webpay Plus para producción usando variables de entorno
 options = WebpayOptions(
     commerce_code=os.getenv('WEBPAY_COMMERCE_CODE'),
     api_key=os.getenv('WEBPAY_API_KEY'),
-    integration_type=os.getenv('WEBPAY_INTEGRATION_TYPE'),
+    integration_type=os.getenv('WEBPAY_INTEGRATION_TYPE', 'LIVE'),
 )
 tx = Transaction(options)
 
