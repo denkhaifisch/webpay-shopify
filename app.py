@@ -18,6 +18,7 @@ def index():
 
 @app.route('/pay', methods=['POST'])
 def create_payment():
+    print(f"Credenciales: commerce_code={os.getenv('WEBPAY_COMMERCE_CODE')}, api_key={os.getenv('WEBPAY_API_KEY')}, integration_type={os.getenv('WEBPAY_INTEGRATION_TYPE')}")
     buy_order = request.form.get('order_id')
     amount = request.form.get('amount')
 
@@ -36,8 +37,10 @@ def create_payment():
 
     try:
         response = tx.create(buy_order, session_id, amount, return_url)
+        print(f"Respuesta de Transbank: {response}")
         return redirect(f"{response['url']}?token_ws={response['token']}")
     except TransbankError as e:
+        print(f"Error de Transbank: {str(e)} - Detalles: {e.message}")
         return f"Error al iniciar el pago: {str(e)} - Detalles: {e.message}", 400
 
 @app.route('/result', methods=['GET', 'POST'])
@@ -48,11 +51,13 @@ def payment_result():
 
     try:
         response = tx.commit(token=token)
+        print(f"Confirmación de Transbank: {response}")
         if response['status'] == 'AUTHORIZED':
             return f"Pago exitoso para el pedido {response['buy_order']}. Monto: {response['amount']}."
         else:
             return f"Pago fallido para el pedido {response['buy_order']}. Estado: {response['status']}", 400
     except TransbankError as e:
+        print(f"Error en confirmación: {str(e)}")
         return f"Error al procesar el pago: {str(e)}", 400
 
 if __name__ == '__main__':
