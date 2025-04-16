@@ -5,10 +5,17 @@ import os
 
 app = Flask(__name__)
 
+# Validar credenciales al iniciar
+commerce_code = os.getenv('WEBPAY_COMMERCE_CODE')
+api_key = os.getenv('WEBPAY_API_KEY')
+integration_type = os.getenv('WEBPAY_INTEGRATION_TYPE', 'LIVE')
+if not commerce_code or not api_key:
+    raise ValueError("Faltan WEBPAY_COMMERCE_CODE o WEBPAY_API_KEY en las variables de entorno")
+
 options = WebpayOptions(
-    commerce_code=os.getenv('WEBPAY_COMMERCE_CODE'),
-    api_key=os.getenv('WEBPAY_API_KEY'),
-    integration_type=os.getenv('WEBPAY_INTEGRATION_TYPE', 'LIVE'),
+    commerce_code=commerce_code,
+    api_key=api_key,
+    integration_type=integration_type,
 )
 tx = Transaction(options)
 
@@ -18,7 +25,7 @@ def index():
 
 @app.route('/pay', methods=['POST'])
 def create_payment():
-    print(f"Credenciales: commerce_code={os.getenv('WEBPAY_COMMERCE_CODE')}, api_key={os.getenv('WEBPAY_API_KEY')}, integration_type={os.getenv('WEBPAY_INTEGRATION_TYPE')}")
+    print(f"Credenciales: commerce_code={commerce_code}, api_key={api_key}, integration_type={integration_type}")
     buy_order = request.form.get('order_id')
     amount = request.form.get('amount')
 
@@ -33,7 +40,7 @@ def create_payment():
         return "Error: El monto debe ser un número entero positivo", 400
 
     session_id = f"session_{buy_order}"
-    return_url = request.host_url + "result"
+    return_url = f"{request.host_url.rstrip('/')}/result"
 
     try:
         response = tx.create(buy_order, session_id, amount, return_url)
