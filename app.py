@@ -1,30 +1,12 @@
 from flask import Flask, request, render_template, redirect
-from transbank.error.transbank_error import TransbankError
-from transbank.webpay.webpay_plus.transaction import Transaction, WebpayOptions
-import os
-from transbank.common.integration_commerce_codes import IntegrationCommerceCodes
-from transbank.common.integration_type import IntegrationType
-from transbank.common.integration_api_keys import IntegrationApiKeys
-from transbank.common.options import WebpayOptions
-
+import requests
+import json
 
 app = Flask(__name__)
 
-# Credenciales y modo LIVE hardcodeados
+# Credenciales hardcodeadas
 commerce_code = "597037325732"
 api_key = "d89040c88af98fe38e1c47d5a0fc705c"
-integration_type = "LIVE"
-
-# Validar credenciales al iniciar
-if not commerce_code or not api_key:
-    raise ValueError("Faltan credenciales")
-
-options = WebpayOptions(
-    commerce_code=commerce_code,
-    api_key=api_key,
-    integration_type=integration_type,
-)
-tx = Transaction(options)
 
 @app.route('/', methods=['GET'])
 def index():
@@ -32,7 +14,7 @@ def index():
 
 @app.route('/pay', methods=['POST'])
 def create_payment():
-    print(f"Credenciales: commerce_code={commerce_code}, api_key={api_key}, integration_type={integration_type}")
+    print(f"Credenciales: commerce_code={commerce_code}, api_key={api_key}")
     buy_order = request.form.get('order_id')
     amount = request.form.get('amount')
     print(f"Amount recibido: {amount}")
@@ -48,16 +30,35 @@ def create_payment():
         return "Error: El monto debe ser un número entero positivo", 400
 
     session_id = f"session_{buy_order}"
-    return_url = "https://webpay-shopify.onrender.com/result"  # Hardcodeado para producción
+    return_url = "https://webpay-shopify.onrender.com/result"
     print(f"buy_order: {buy_order}, session_id: {session_id}, amount: {amount}, return_url: {return_url}")
 
+    headers = {
+        "Tbk-Api-Key-Id": commerce_code,
+        "Tbk-Api-Key-Secret": api_key,
+        "Content-Type": "application/json",
+    }
+    payload = {
+        "buy_order": buy_order,
+        "session_id": session_id,
+        "amount": amount,
+        "return_url": return_url,
+    }
+
     try:
-        response = tx.create(buy_order, session_id, amount, return_url)
-        print(f"Respuesta de Transbank: {response}")
-        return redirect(f"{response['url']}?token_ws={response['token']}")
-    except TransbankError as e:
-        print(f"Error de Transbank: {str(e)} - Detalles: {e.message}")
-        return f"Error al iniciar el pago: {str(e)} - Detalles: {e.message}", 400
+        print(f"Enviando: {json.dumps(payload)}")
+        response = requests.post(
+            "https://webpay3g.transbank.cl/rswebpaytransaction/api/webpay/v1.2/transactions",
+            headers=headers,
+            json=payload,
+        )
+        response.raise_for_status()
+        data = response.json()
+        print(f"Respuesta: {data}")
+        return redirect(f"{data['url']}?token_ws={data['token']}")
+    except requests.exceptions.RequestException as e:
+        print(f"Error HTTP: {str(e)}")
+        return f"Error al iniciar el pago: {str(e)}", 400
 
 @app.route('/result', methods=['GET', 'POST'])
 def payment_result():
@@ -65,17 +66,28 @@ def payment_result():
     if not token:
         return "Error: No se proporcionó token", 400
 
+    headers = {
+        "Tbk-Api-Key-Id": commerce_code,
+        "Tbk-Api-Key-Secret": api_key,
+        "Content-Type": "application/json",
+    }
     try:
-        response = tx.commit(token=token)
-        print(f"Confirmación de Transbank: {response}")
-        if response['status'] == 'AUTHORIZED':
-            return f"Pago exitoso para el pedido {response['buy_order']}. Monto: {response['amount']}."
+        print(f"Confirmando token: {token}")
+        response = requests.put(
+            f"https://webpay3g.transbank.cl/rswebpaytransaction/api/webpay/v1.2/transactions/{token}",
+            headers=headers,
+        )
+        response.raise_for_status()
+        data = response.json()
+        print(f"Confirmación: {data}")
+        if data['status'] == 'AUTHORIZED':
+            return f"Pago exitoso para el pedido {data['buy_order']}. Monto: {data['amount']}."
         else:
-            return f"Pago fallido para el pedido {response['buy_order']}. Estado: {response['status']}", 400
-    except TransbankError as e:
-        print(f"Error en confirmación: {str(e)}")
+            return f"Pago fallido para el pedido {data['buy_order']}. Estado: {data['status']}", 400
+    except requests.exceptions.RequestException as e:
+        print(f"Error HTTP: {str(e)}")
         return f"Error al procesar el pago: {str(e)}", 400
 
 if __name__ == '__main__':
-    port = 5000  # Hardcodeado para local
+    port = 5000
     app.run(host='0.0.0.0', port=port, debug=False)
