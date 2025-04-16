@@ -7,15 +7,17 @@ from transbank.common.integration_type import IntegrationType
 from transbank.common.integration_api_keys import IntegrationApiKeys
 from transbank.common.options import WebpayOptions
 
+
 app = Flask(__name__)
 
-# Validar y limpiar credenciales
+# Limpiar credenciales
 commerce_code = os.getenv('WEBPAY_COMMERCE_CODE', '').strip()
 api_key = os.getenv('WEBPAY_API_KEY', '').strip()
 integration_type = os.getenv('WEBPAY_INTEGRATION_TYPE', 'LIVE').strip()
 if not commerce_code or not api_key:
-    raise ValueError("Faltan WEBPAY_COMMERCE_CODE o WEBPAY_API_KEY en las variables de entorno")
+    raise ValueError("Faltan WEBPAY_COMMERCE_CODE o WEBPAY_API_KEY")
 
+print(f"Longitud commerce_code: {len(commerce_code)}, api_key: {len(api_key)}")
 options = WebpayOptions(
     commerce_code=commerce_code,
     api_key=api_key,
@@ -45,8 +47,8 @@ def create_payment():
         return "Error: El monto debe ser un número entero positivo", 400
 
     session_id = f"session_{buy_order}"
-    return_url = "https://webpay-shopify.onrender.com/result" if 'onrender.com' in request.host_url else f"{request.host_url.rstrip('/')}/result"
-    print(f"return_url: {return_url}")
+    return_url = "https://webpay-shopify.onrender.com/result"  # Forzar URL de producción
+    print(f"buy_order: {buy_order}, session_id: {session_id}, amount: {amount}, return_url: {return_url}")
 
     try:
         response = tx.create(buy_order, session_id, amount, return_url)
