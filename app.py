@@ -10,14 +10,15 @@ from transbank.common.options import WebpayOptions
 
 app = Flask(__name__)
 
-# Limpiar credenciales
-commerce_code = os.getenv('WEBPAY_COMMERCE_CODE', '').strip()
-api_key = os.getenv('WEBPAY_API_KEY', '').strip()
-integration_type = os.getenv('WEBPAY_INTEGRATION_TYPE', 'LIVE').strip()
-if not commerce_code or not api_key:
-    raise ValueError("Faltan WEBPAY_COMMERCE_CODE o WEBPAY_API_KEY")
+# Credenciales y modo LIVE hardcodeados
+commerce_code = "597037325732"
+api_key = "d89040c88af98fe38e1c47d5a0fc705c"
+integration_type = "LIVE"
 
-print(f"Longitud commerce_code: {len(commerce_code)}, api_key: {len(api_key)}")
+# Validar credenciales al iniciar
+if not commerce_code or not api_key:
+    raise ValueError("Faltan credenciales")
+
 options = WebpayOptions(
     commerce_code=commerce_code,
     api_key=api_key,
@@ -47,7 +48,7 @@ def create_payment():
         return "Error: El monto debe ser un número entero positivo", 400
 
     session_id = f"session_{buy_order}"
-    return_url = "https://webpay-shopify.onrender.com/result"  # Forzar URL de producción
+    return_url = "https://webpay-shopify.onrender.com/result"  # Hardcodeado para producción
     print(f"buy_order: {buy_order}, session_id: {session_id}, amount: {amount}, return_url: {return_url}")
 
     try:
@@ -76,5 +77,5 @@ def payment_result():
         return f"Error al procesar el pago: {str(e)}", 400
 
 if __name__ == '__main__':
-    port = int(os.environ.get('PORT', 5000))
+    port = 5000  # Hardcodeado para local
     app.run(host='0.0.0.0', port=port, debug=False)
