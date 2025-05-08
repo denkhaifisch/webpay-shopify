@@ -6,13 +6,17 @@ import os
 
 app = Flask(__name__)
 
-# Credenciales hardcodeadas (temporalmente, luego usaremos variables de entorno)
+# Credenciales hardcodeadas
 commerce_code = "597037325732"
 api_key = "d89040c88af98fe38e1c47d5a0fc705c"
 
-# Configuración de Supabase (usaremos variables de entorno en Render)
+# Configuración de Supabase
 SUPABASE_URL = os.getenv("SUPABASE_URL")
 SUPABASE_KEY = os.getenv("SUPABASE_KEY")
+
+# Validar credenciales de Supabase
+if not SUPABASE_URL or not SUPABASE_KEY:
+    raise ValueError("Faltan SUPABASE_URL o SUPABASE_KEY en las variables de entorno")
 
 # Inicializar cliente de Supabase
 supabase: Client = create_client(SUPABASE_URL, SUPABASE_KEY)
@@ -50,11 +54,11 @@ def create_payment():
         "status": "PENDING"
     }
     try:
-        supabase.table("transactions").insert(transaction).execute()
-        print(f"Transacción PENDING guardada: {transaction}")
+        result = supabase.table("transactions").insert(transaction).execute()
+        print(f"Transacción PENDING guardada: {result.data}")
     except Exception as e:
         print(f"Error al guardar en Supabase: {str(e)}")
-        return f"Error al guardar transacción: {str(e)}", 500
+        return f"Error al guardar transacción en base de datos: {str(e)}", 500
 
     headers = {
         "Tbk-Api-Key-Id": commerce_code,
@@ -89,7 +93,10 @@ def create_payment():
             "status": "FAILED",
             "response": {"error": str(e)}
         }
-        supabase.table("transactions").insert(transaction).execute()
+        try:
+            supabase.table("transactions").insert(transaction).execute()
+        except Exception as e2:
+            print(f"Error al guardar fallo en Supabase: {str(e2)}")
         return f"Error al iniciar el pago: {str(e)}", 400
 
 @app.route('/result', methods=['GET', 'POST'])
@@ -122,8 +129,13 @@ def payment_result():
             "status": data.get('status'),
             "response": data
         }
-        supabase.table("transactions").insert(transaction).execute()
-        print(f"Transacción {data['status']} guardada: {transaction}")
+        try:
+            result = supabase.table("transactions").insert(transaction).execute()
+            print(f"Transacción {data['status']} guardada: {result.data}")
+        except Exception as e:
+            print(f"Error al guardar en Supabase: {str(e)}")
+            # Continuar aunque Supabase falle, para no interrumpir el flujo
+            pass
 
         if data['status'] == 'AUTHORIZED':
             return f"Pago exitoso para el pedido {data['buy_order']}. Monto: {data['amount']}."
@@ -140,7 +152,10 @@ def payment_result():
             "status": "FAILED",
             "response": {"error": str(e)}
         }
-        supabase.table("transactions").insert(transaction).execute()
+        try:
+            supabase.table("transactions").insert(transaction).execute()
+        except Exception as e2:
+            print(f"Error al guardar fallo en Supabase: {str(e2)}")
         return f"Error al procesar el pago: {str(e)}", 400
 
 if __name__ == '__main__':
