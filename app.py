@@ -1,12 +1,21 @@
 from flask import Flask, request, render_template, redirect
 import requests
 import json
+from supabase import create_client, Client
+import os
 
 app = Flask(__name__)
 
-# Credenciales hardcodeadas
+# Credenciales hardcodeadas (temporalmente, luego usaremos variables de entorno)
 commerce_code = "597037325732"
 api_key = "d89040c88af98fe38e1c47d5a0fc705c"
+
+# Configuración de Supabase (usaremos variables de entorno en Render)
+SUPABASE_URL = os.getenv("SUPABASE_URL")
+SUPABASE_KEY = os.getenv("SUPABASE_KEY")
+
+# Inicializar cliente de Supabase
+supabase: Client = create_client(SUPABASE_URL, SUPABASE_KEY)
 
 @app.route('/', methods=['GET'])
 def index():
@@ -33,6 +42,20 @@ def create_payment():
     return_url = "https://webpay-shopify.onrender.com/result"
     print(f"buy_order: {buy_order}, session_id: {session_id}, amount: {amount}, return_url: {return_url}")
 
+    # Guardar transacción inicial (PENDING) en Supabase
+    transaction = {
+        "order_id": buy_order,
+        "amount": amount,
+        "session_id": session_id,
+        "status": "PENDING"
+    }
+    try:
+        supabase.table("transactions").insert(transaction).execute()
+        print(f"Transacción PENDING guardada: {transaction}")
+    except Exception as e:
+        print(f"Error al guardar en Supabase: {str(e)}")
+        return f"Error al guardar transacción: {str(e)}", 500
+
     headers = {
         "Tbk-Api-Key-Id": commerce_code,
         "Tbk-Api-Key-Secret": api_key,
@@ -58,6 +81,15 @@ def create_payment():
         return redirect(f"{data['url']}?token_ws={data['token']}")
     except requests.exceptions.RequestException as e:
         print(f"Error HTTP: {str(e)}")
+        # Guardar error en Supabase
+        transaction = {
+            "order_id": buy_order,
+            "amount": amount,
+            "session_id": session_id,
+            "status": "FAILED",
+            "response": {"error": str(e)}
+        }
+        supabase.table("transactions").insert(transaction).execute()
         return f"Error al iniciar el pago: {str(e)}", 400
 
 @app.route('/result', methods=['GET', 'POST'])
@@ -80,12 +112,35 @@ def payment_result():
         response.raise_for_status()
         data = response.json()
         print(f"Confirmación: {data}")
+
+        # Guardar resultado en Supabase
+        transaction = {
+            "order_id": data.get('buy_order'),
+            "amount": data.get('amount'),
+            "session_id": data.get('session_id'),
+            "token_ws": token,
+            "status": data.get('status'),
+            "response": data
+        }
+        supabase.table("transactions").insert(transaction).execute()
+        print(f"Transacción {data['status']} guardada: {transaction}")
+
         if data['status'] == 'AUTHORIZED':
             return f"Pago exitoso para el pedido {data['buy_order']}. Monto: {data['amount']}."
         else:
             return f"Pago fallido para el pedido {data['buy_order']}. Estado: {data['status']}", 400
     except requests.exceptions.RequestException as e:
         print(f"Error HTTP: {str(e)}")
+        # Guardar error en Supabase
+        transaction = {
+            "order_id": None,
+            "amount": None,
+            "session_id": None,
+            "token_ws": token,
+            "status": "FAILED",
+            "response": {"error": str(e)}
+        }
+        supabase.table("transactions").insert(transaction).execute()
         return f"Error al procesar el pago: {str(e)}", 400
 
 if __name__ == '__main__':
